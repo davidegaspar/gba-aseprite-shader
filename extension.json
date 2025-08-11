@@ -1,0 +1,18 @@
+{
+  "name": "gba-aseprite-shader",
+  "version": "1.0.0",
+  "displayName": "GBA Aseprite Shader",
+  "description": "Recreate the original Game Boy Advance screen look in digital pixelart",
+  "author": {
+    "name": "davidegaspar",
+    "email": "",
+    "url": ""
+  },
+  "main": "gba-aseprite-shader.lua",
+  "apiVersion": "1.2.10",
+  "dependencies": [],
+  "keywords": ["gameboy", "gba", "retro", "effect", "filter"],
+  "engines": {
+    "aseprite": ">=1.2.10"
+  }
+}
