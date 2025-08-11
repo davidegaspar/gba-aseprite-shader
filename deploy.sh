@@ -46,9 +46,7 @@ cp "$SOURCE_DIR/gba-aseprite-shader.lua" "$TARGET_DIR/"
 
 echo "✅ Extension deployed successfully!"
 
-echo "⚠️  Please manually restart Aseprite to load the extension"
+echo "⚠️ Please manually restart Aseprite to load the extension"
 
 echo ""
-echo "🎮 Extension installed! Look for 'GBA Pixel Grid Effect' in:"
-echo "   • Sprite → Color → GBA Effects → Apply GBA Pixel Grid"
-echo "   • Or use the command palette (Ctrl+Shift+P / Cmd+Shift+P)"
+echo "🎮 Edit → FX → GBA Shader"

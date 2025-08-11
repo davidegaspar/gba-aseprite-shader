@@ -8,14 +8,12 @@ Recreate the original Game Boy Advance screen look in digital pixelart.
 
 ## Effects
 
-- low contrast ratio
-- saturation
-- blue-green tint
-- red: orange / brown
-- green: less vibrant
-- blue: cyan / teal
-- black appears as dark grey
-- magenta/purple shift in darker tones
+- saturation - 50/65/75
+- red: orange / brown - ok
+- green: less vibrant - more mute
+- blue: cyan / teal - more
+- black appears as dark grey - need more
+- magenta/purple shift in darker tones - ???
 
 ## Development
 
