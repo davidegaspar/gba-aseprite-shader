@@ -24,6 +24,10 @@ function showDialog()
         dlg:close()
     end
 
+    -- Reset preview state when opening dialog
+    previewActive = false
+    originalImage = nil
+
     dlg = Dialog("GBA Aseprite Shader")
 
     dlg:separator{
@@ -157,7 +161,8 @@ function applyGBAShader()
         return
     end
 
-    local image = cel.image:clone()
+    -- Use original image if preview is active, otherwise use current image
+    local image = (previewActive and originalImage) and originalImage:clone() or cel.image:clone()
     local spec = image.spec
 
     if spec.colorMode ~= ColorMode.RGB then
@@ -204,7 +209,7 @@ function applyGBAEffects(r, g, b, data)
         g = g + (original_r * 0.1)
 
         -- cyan: shift blue to green
-        b = b * 0.9
+        b = b * 0.75
         g = g + (original_b * 0.15)
 
         -- less vibrant green
