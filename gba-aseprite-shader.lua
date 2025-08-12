@@ -199,19 +199,19 @@ function applyGBAEffects(r, g, b, data)
     -- colorShift
     if data.colorShift then
 
-        -- orange/brown: shift red to green 
-        r = r * 0.85
+        -- shift red to green
+        r = r * 0.8
         g = g + (original_r * 0.1)
 
-        -- cyan/teal: shift blue to green
+        -- cyan: shift blue to green
         b = b * 0.9
         g = g + (original_b * 0.15)
 
         -- less vibrant green
-        g = g * 0.9
+        g = g * 0.8
     end
 
-    -- Desaturation
+    -- desaturation
     local luma = 0.299 * r + 0.587 * g + 0.114 * b
     local saturation_factor = data.saturation / 100.0
     r = luma + (r - luma) * saturation_factor
@@ -222,7 +222,6 @@ function applyGBAEffects(r, g, b, data)
     local blackLevel = data.blackLevel / 100.0
     local whiteLevel = data.whiteLevel / 100.0
     local range = whiteLevel - blackLevel
-
     r = blackLevel + (r * range)
     g = blackLevel + (g * range)
     b = blackLevel + (b * range)
