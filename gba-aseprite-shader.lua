@@ -33,10 +33,63 @@ function showDialog()
     dlg:slider{
         id = "saturation",
         label = "Saturation:",
-        min = 0,
-        max = 100,
-        value = 65,
+        min = 50,
+        max = 70,
+        value = 60,
         onchange = function()
+            -- Round to nearest 10
+            local value = dlg.data.saturation
+            local rounded = math.floor((value + 5) / 10) * 10
+            if value ~= rounded then
+                dlg:modify{
+                    id = "saturation",
+                    value = rounded
+                }
+            end
+            if previewActive then
+                updatePreview()
+            end
+        end
+    }
+
+    dlg:slider{
+        id = "blackLevel",
+        label = "Black:",
+        min = 5,
+        max = 15,
+        value = 10,
+        onchange = function()
+            -- Round to nearest 5
+            local value = dlg.data.blackLevel
+            local rounded = math.floor((value + 2.5) / 5) * 5
+            if value ~= rounded then
+                dlg:modify{
+                    id = "blackLevel",
+                    value = rounded
+                }
+            end
+            if previewActive then
+                updatePreview()
+            end
+        end
+    }
+
+    dlg:slider{
+        id = "whiteLevel",
+        label = "White:",
+        min = 75,
+        max = 85,
+        value = 80,
+        onchange = function()
+            -- Round to nearest 5
+            local value = dlg.data.whiteLevel
+            local rounded = math.floor((value + 2.5) / 5) * 5
+            if value ~= rounded then
+                dlg:modify{
+                    id = "whiteLevel",
+                    value = rounded
+                }
+            end
             if previewActive then
                 updatePreview()
             end
@@ -45,7 +98,7 @@ function showDialog()
 
     dlg:check{
         id = "colorShift",
-        label = "GBA Color Shift",
+        label = "Color Shift",
         selected = true,
         onclick = function()
             if previewActive then
@@ -56,7 +109,7 @@ function showDialog()
 
     dlg:check{
         id = "preview",
-        label = "Live Preview",
+        label = "Preview",
         selected = true,
         onclick = function()
             togglePreview()
@@ -143,7 +196,7 @@ function applyGBAEffects(r, g, b, data)
     local original_g = g
     local original_b = b
 
-    -- Step 2: Color Channel Shifts
+    -- colorShift
     if data.colorShift then
 
         -- orange/brown: shift red to green 
@@ -158,16 +211,26 @@ function applyGBAEffects(r, g, b, data)
         g = g * 0.9
     end
 
-    -- Step 3: Desaturation
+    -- Desaturation
     local luma = 0.299 * r + 0.587 * g + 0.114 * b
     local saturation_factor = data.saturation / 100.0
     r = luma + (r - luma) * saturation_factor
     g = luma + (g - luma) * saturation_factor
     b = luma + (b - luma) * saturation_factor
 
-    r = math.max(0, math.min(1, r)) * 255
-    g = math.max(0, math.min(1, g)) * 255
-    b = math.max(0, math.min(1, b)) * 255
+    -- compress colors using black and white levels
+    local blackLevel = data.blackLevel / 100.0
+    local whiteLevel = data.whiteLevel / 100.0
+    local range = whiteLevel - blackLevel
+
+    r = blackLevel + (r * range)
+    g = blackLevel + (g * range)
+    b = blackLevel + (b * range)
+
+    -- convert
+    r = r * 255
+    g = g * 255
+    b = b * 255
 
     return math.floor(r), math.floor(g), math.floor(b)
 end
