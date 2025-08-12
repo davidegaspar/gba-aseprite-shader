@@ -17,6 +17,9 @@ function exit(plugin)
     if dlg then
         dlg:close()
     end
+    -- Cleanup on plugin exit
+    previewActive = false
+    originalImage = nil
 end
 
 function showDialog()
@@ -127,6 +130,9 @@ function showDialog()
         text = "Apply",
         onclick = function()
             applyGBAShader()
+            -- Cleanup after apply
+            previewActive = false
+            originalImage = nil
         end
     }
 
@@ -137,6 +143,9 @@ function showDialog()
             if previewActive then
                 restoreOriginal()
             end
+            -- Cleanup after cancel
+            previewActive = false
+            originalImage = nil
             dlg:close()
         end
     }
