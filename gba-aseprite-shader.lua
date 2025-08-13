@@ -1,6 +1,28 @@
 local dlg = nil
-local originalImage = nil
-local previewActive = false
+
+-- Constants
+local PIXEL_SCALE = 6
+local BGR_COLUMNS = {BLUE = {0, 1}, GREEN = {2, 3}, RED = {4, 5}}
+local DIMMED_ROWS = {TOP = 0, BOTTOM = 5}
+
+-- Validation functions
+function validateSprite()
+    local sprite = app.activeSprite
+    if not sprite then
+        app.alert("No active sprite")
+        return nil
+    end
+    return sprite
+end
+
+function validateCel()
+    local cel = app.activeCel
+    if not cel then
+        app.alert("No active cel")
+        return nil
+    end
+    return cel
+end
 
 function sliderOnChange(dialog, sliderId, increment)
     return function()
@@ -13,6 +35,20 @@ function sliderOnChange(dialog, sliderId, increment)
             }
         end
     end
+end
+
+function createColorChannels(r, g, b, blendFactor, a)
+    -- Calculate blend values
+    local rBlend = math.floor(r * blendFactor)
+    local gBlend = math.floor(g * blendFactor)
+    local bBlend = math.floor(b * blendFactor)
+
+    -- Create BGR color channels with blending
+    local blueColor = app.pixelColor.rgba(rBlend, gBlend, b, a)
+    local greenColor = app.pixelColor.rgba(rBlend, g, bBlend, a)
+    local redColor = app.pixelColor.rgba(r, gBlend, bBlend, a)
+
+    return blueColor, greenColor, redColor, rBlend, gBlend, bBlend
 end
 
 function createDimmedColors(r, g, b, rBlend, gBlend, bBlend, rowDimming, a)
@@ -28,6 +64,58 @@ function createDimmedColors(r, g, b, rBlend, gBlend, bBlend, rowDimming, a)
     local dimmedR = app.pixelColor.rgba(rDimmed, gBlendDimmed, bBlendDimmed, a)
 
     return dimmedB, dimmedG, dimmedR
+end
+
+function processPixel(x, y, image, scaledImage, pixelDimming, colorBlending, data)
+    local pixelValue = image:getPixel(x, y)
+    local r = app.pixelColor.rgbaR(pixelValue)
+    local g = app.pixelColor.rgbaG(pixelValue)
+    local b = app.pixelColor.rgbaB(pixelValue)
+    local a = app.pixelColor.rgbaA(pixelValue)
+
+    -- Apply GBA color effects if data is provided
+    if data then
+        r, g, b = applyGBAEffects(r, g, b, data)
+    end
+
+    -- Calculate pixel position in scaled image
+    local pixelX = x * PIXEL_SCALE
+    local pixelY = y * PIXEL_SCALE
+
+    -- Create BGR color channels
+    local blueColor, greenColor, redColor, rBlend, gBlend, bBlend = createColorChannels(r, g, b, colorBlending, a)
+
+    -- Draw the 6x6 pixel grid (BGR layout)
+    for row = 0, PIXEL_SCALE - 1 do
+        -- Blue columns (left 2)
+        scaledImage:putPixel(pixelX + BGR_COLUMNS.BLUE[1], pixelY + row, blueColor)
+        scaledImage:putPixel(pixelX + BGR_COLUMNS.BLUE[2], pixelY + row, blueColor)
+        -- Green columns (middle 2)
+        scaledImage:putPixel(pixelX + BGR_COLUMNS.GREEN[1], pixelY + row, greenColor)
+        scaledImage:putPixel(pixelX + BGR_COLUMNS.GREEN[2], pixelY + row, greenColor)
+        -- Red columns (right 2)
+        scaledImage:putPixel(pixelX + BGR_COLUMNS.RED[1], pixelY + row, redColor)
+        scaledImage:putPixel(pixelX + BGR_COLUMNS.RED[2], pixelY + row, redColor)
+    end
+
+    -- Apply dimming to top and bottom rows
+    local dimmedB, dimmedG, dimmedR = createDimmedColors(r, g, b, rBlend, gBlend, bBlend, pixelDimming, a)
+    
+    -- Top row (dimmed)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.BLUE[1], pixelY + DIMMED_ROWS.TOP, dimmedB)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.BLUE[2], pixelY + DIMMED_ROWS.TOP, dimmedB)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.GREEN[1], pixelY + DIMMED_ROWS.TOP, dimmedG)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.GREEN[2], pixelY + DIMMED_ROWS.TOP, dimmedG)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.RED[1], pixelY + DIMMED_ROWS.TOP, dimmedR)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.RED[2], pixelY + DIMMED_ROWS.TOP, dimmedR)
+
+    -- Bottom row (dimmed)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.BLUE[1], pixelY + DIMMED_ROWS.BOTTOM, dimmedB)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.BLUE[2], pixelY + DIMMED_ROWS.BOTTOM, dimmedB)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.GREEN[1], pixelY + DIMMED_ROWS.BOTTOM, dimmedG)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.GREEN[2], pixelY + DIMMED_ROWS.BOTTOM, dimmedG)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.RED[1], pixelY + DIMMED_ROWS.BOTTOM, dimmedR)
+    scaledImage:putPixel(pixelX + BGR_COLUMNS.RED[2], pixelY + DIMMED_ROWS.BOTTOM, dimmedR)
 end
 
 function init(plugin)
@@ -46,8 +134,6 @@ function exit(plugin)
         dlg:close()
     end
     -- Cleanup on plugin exit
-    previewActive = false
-    originalImage = nil
 end
 
 function showPixelGridDialog()
@@ -150,17 +236,11 @@ function showPixelGridDialog()
 end
 
 function applyPixelGrid(data)
-    local sprite = app.activeSprite
-    if not sprite then
-        app.alert("No active sprite")
-        return
-    end
-
-    local cel = app.activeCel
-    if not cel then
-        app.alert("No active cel")
-        return
-    end
+    local sprite = validateSprite()
+    if not sprite then return end
+    
+    local cel = validateCel()
+    if not cel then return end
 
     local image = cel.image
     local spec = image.spec
@@ -177,16 +257,16 @@ function applyPixelGrid(data)
 end
 
 function apply6xPixelGrid(sprite, cel, image, data)
-    local width = image.width
-    local height = image.height
+    local originalWidth = image.width
+    local originalHeight = image.height
 
-    -- Extract values from data
-    local rowDimming = (100 - data.rowSeparation) / 100.0
-    local blendFactor = data.blendFactor / 100.0
+    -- Convert UI percentages to working values
+    local pixelDimming = (100 - data.rowSeparation) / 100.0
+    local colorBlending = data.blendFactor / 100.0
 
-    -- Create new sprite with 6x width and height
-    local newSprite = Sprite(width * 6, height * 6, image.spec.colorMode)
-    local newImage = newSprite.cels[1].image
+    -- Create scaled output sprite
+    local scaledSprite = Sprite(originalWidth * PIXEL_SCALE, originalHeight * PIXEL_SCALE, image.spec.colorMode)
+    local scaledImage = scaledSprite.cels[1].image
 
     -- Set the filename to match the original sprite's path
     if sprite.filename then
@@ -195,70 +275,15 @@ function apply6xPixelGrid(sprite, cel, image, data)
         local name = path:match("([^/]+)%.[^%.]+$")
         local ext = path:match("%.([^%.]+)$")
         if dir and name and ext then
-            newSprite.filename = dir .. name .. "_6x." .. ext
+            scaledSprite.filename = dir .. name .. "_6x." .. ext
         end
     end
 
+    -- Process each pixel in the original image
     app.transaction(function()
-        for y = 0, height - 1 do
-            for x = 0, width - 1 do
-                local pixelValue = image:getPixel(x, y)
-                local r = app.pixelColor.rgbaR(pixelValue)
-                local g = app.pixelColor.rgbaG(pixelValue)
-                local b = app.pixelColor.rgbaB(pixelValue)
-                local a = app.pixelColor.rgbaA(pixelValue)
-
-                -- Apply GBA effects if data is provided
-                if data then
-                    r, g, b = applyGBAEffects(r, g, b, data)
-                end
-
-                -- Create 6x6 grid for this pixel
-                local newX = x * 6
-                local newY = y * 6
-
-                -- Calculate blend values
-                local rBlend = math.floor(r * blendFactor)
-                local gBlend = math.floor(g * blendFactor)
-                local bBlend = math.floor(b * blendFactor)
-
-                -- Blue vertical bars (left 2 columns) - blend with red and green
-                local blueColor = app.pixelColor.rgba(rBlend, gBlend, b, a)
-                for row = 0, 5 do
-                    newImage:putPixel(newX, newY + row, blueColor)
-                    newImage:putPixel(newX + 1, newY + row, blueColor)
-                end
-
-                -- Green vertical bars (middle 2 columns) - blend with blue and red
-                local greenColor = app.pixelColor.rgba(rBlend, g, bBlend, a)
-                for row = 0, 5 do
-                    newImage:putPixel(newX + 2, newY + row, greenColor)
-                    newImage:putPixel(newX + 3, newY + row, greenColor)
-                end
-
-                -- Red vertical bars (right 2 columns) - blend with blue and green
-                local redColor = app.pixelColor.rgba(r, gBlend, bBlend, a)
-                for row = 0, 5 do
-                    newImage:putPixel(newX + 4, newY + row, redColor)
-                    newImage:putPixel(newX + 5, newY + row, redColor)
-                end
-
-                -- Create dimmed colors for first and last rows
-                local dimmedB, dimmedG, dimmedR = createDimmedColors(r, g, b, rBlend, gBlend, bBlend, rowDimming, a)
-
-                newImage:putPixel(newX, newY, dimmedB)
-                newImage:putPixel(newX + 1, newY, dimmedB)
-                newImage:putPixel(newX + 2, newY, dimmedG)
-                newImage:putPixel(newX + 3, newY, dimmedG)
-                newImage:putPixel(newX + 4, newY, dimmedR)
-                newImage:putPixel(newX + 5, newY, dimmedR)
-
-                newImage:putPixel(newX, newY + 5, dimmedB)
-                newImage:putPixel(newX + 1, newY + 5, dimmedB)
-                newImage:putPixel(newX + 2, newY + 5, dimmedG)
-                newImage:putPixel(newX + 3, newY + 5, dimmedG)
-                newImage:putPixel(newX + 4, newY + 5, dimmedR)
-                newImage:putPixel(newX + 5, newY + 5, dimmedR)
+        for y = 0, originalHeight - 1 do
+            for x = 0, originalWidth - 1 do
+                processPixel(x, y, image, scaledImage, pixelDimming, colorBlending, data)
             end
         end
     end)
