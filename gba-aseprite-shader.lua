@@ -59,9 +59,9 @@ function showPixelGridDialog()
     gridDlg:slider{
         id = "blendFactor",
         label = "Blend:",
-        min = 25,
-        max = 75,
-        value = 25
+        min = 50,
+        max = 100,
+        value = 75
     }
 
     gridDlg:slider{
@@ -141,7 +141,7 @@ function applyPixelGrid(dimmingFactor, blendFactor, data)
         return
     end
 
-    apply6xPixelGrid(sprite, cel, image, dimmingFactor or 0.75, blendFactor or 0.5, data)
+    apply6xPixelGrid(sprite, cel, image, dimmingFactor, blendFactor, data)
 end
 
 function apply6xPixelGrid(sprite, cel, image, dimmingFactor, blendFactor, data)
@@ -151,7 +151,7 @@ function apply6xPixelGrid(sprite, cel, image, dimmingFactor, blendFactor, data)
     -- Create new sprite with 6x width and height
     local newSprite = Sprite(width * 6, height * 6, image.spec.colorMode)
     local newImage = newSprite.cels[1].image
-    
+
     -- Set the filename to match the original sprite's path
     if sprite.filename then
         local path = sprite.filename
