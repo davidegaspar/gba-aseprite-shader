@@ -15,6 +15,14 @@ Recreate the original Game Boy Advance screen look in digital pixelart.
 - black appears as dark grey - need more
 - magenta/purple shift in darker tones - ???
 
+## Pixel structure
+
+_NOTE: the microscope inverts the image horizontally and vertically_
+
+- Real orientation: `Blue`|`Green`|`Red`
+- Dimming zone: top 2px, bottom 1px
+- blue pixels are slightly smaller
+
 ## Development
 
 ### Deploy
