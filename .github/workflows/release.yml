@@ -19,8 +19,12 @@ jobs:
       - name: Calculate version from commit message and latest tag
         id: version
         run: |
-          # Get the latest commit message
-          COMMIT_MESSAGE=$(git log -1 --pretty=%s)
+          # Get the latest commit message (use PR head for pull requests)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            COMMIT_MESSAGE=$(git log -1 --pretty=%s ${{ github.event.pull_request.head.sha }})
+          else
+            COMMIT_MESSAGE=$(git log -1 --pretty=%s)
+          fi
           echo "Commit message: $COMMIT_MESSAGE"
 
           # Extract version increment type from commit message
