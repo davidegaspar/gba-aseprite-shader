@@ -1,0 +1,139 @@
+name: Build and Release Aseprite Extension
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Calculate version from commit message and latest tag
+        id: version
+        run: |
+          # Get the latest commit message
+          COMMIT_MESSAGE=$(git log -1 --pretty=%s)
+          echo "Commit message: $COMMIT_MESSAGE"
+          
+          # Extract version increment type from commit message
+          if [[ $COMMIT_MESSAGE =~ ^major\( ]]; then
+            INCREMENT_TYPE="major"
+          elif [[ $COMMIT_MESSAGE =~ ^minor\( ]]; then
+            INCREMENT_TYPE="minor"
+          elif [[ $COMMIT_MESSAGE =~ ^patch\( ]]; then
+            INCREMENT_TYPE="patch"
+          else
+            echo "❌ No semantic version prefix found in commit message."
+            echo "Expected format: 'major(component): description', 'minor(component): description', or 'patch(component): description'"
+            echo "Cancelling release."
+            exit 1
+          fi
+          
+          echo "Version increment type: $INCREMENT_TYPE"
+          
+          # Get the latest tag from git, default to 0.0.0 if none exists
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          
+          # Use the tag directly as version
+          CURRENT_VERSION=$LATEST_TAG
+          
+          # Parse version components
+          IFS='.' read -r -a version_parts <<< "$CURRENT_VERSION"
+          major=${version_parts[0]:-0}
+          minor=${version_parts[1]:-0}
+          patch=${version_parts[2]:-0}
+          
+          # Increment based on type
+          case $INCREMENT_TYPE in
+            "major")
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            "minor")
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            "patch")
+              patch=$((patch + 1))
+              ;;
+          esac
+          
+          VERSION="$major.$minor.$patch"
+          
+          echo "New version: $VERSION"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_number=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Update package.json version
+        run: |
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - name: Add updater configuration to package.json
+        run: |
+          npm pkg set asepriteExtensionUpdater.updateUrl="https://api.github.com/repos/${{ github.repository }}/releases/latest"
+
+      - name: Create extension package
+        run: |
+          # Create a clean directory for the extension
+          mkdir -p extension-build
+
+          # Copy necessary files
+          cp package.json extension-build/
+          cp gba-aseprite-shader.lua extension-build/
+          cp LICENSE extension-build/
+
+          # Create the .aseprite-extension file
+          cd extension-build
+          zip -r "../gba-aseprite-shader.aseprite-extension" .
+          cd ..
+
+      - name: Verify extension contents
+        run: |
+          echo "Extension contents:"
+          unzip -l gba-aseprite-shader.aseprite-extension
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: GBA Aseprite Shader ${{ steps.version.outputs.version }}
+          body: |
+            ## GBA Aseprite Shader ${{ steps.version.outputs.version }}
+
+            Recreate the original Game Boy Advance screen look in digital pixelart.
+
+            ### Installation
+
+            1. Download the `gba-aseprite-shader.aseprite-extension` file below
+            2. Double-click the file to install, or
+            3. In Aseprite: Edit → Preferences → Extensions → Add Extension
+
+            ### Usage
+
+            Edit → FX → GBA Shader
+            ---
+          draft: false
+          prerelease: false
+
+      - name: Upload Extension File
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./gba-aseprite-shader.aseprite-extension
+          asset_name: gba-aseprite-shader.aseprite-extension
+          asset_content_type: application/zip
