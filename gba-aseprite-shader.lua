@@ -2,8 +2,15 @@ local dlg = nil
 
 -- Constants
 local PIXEL_SCALE = 6
-local BGR_COLUMNS = {BLUE = {0, 1}, GREEN = {2, 3}, RED = {4, 5}}
-local DIMMED_ROWS = {TOP = 0, BOTTOM = 5}
+local BGR_COLUMNS = {
+    BLUE = {0, 1},
+    GREEN = {2, 3},
+    RED = {4, 5}
+}
+local DIMMED_ROWS = {
+    TOP = 0,
+    BOTTOM = 5
+}
 
 -- Validation functions
 function validateSprite()
@@ -100,7 +107,7 @@ function processPixel(x, y, image, scaledImage, pixelDimming, colorBlending, dat
 
     -- Apply dimming to top and bottom rows
     local dimmedB, dimmedG, dimmedR = createDimmedColors(r, g, b, rBlend, gBlend, bBlend, pixelDimming, a)
-    
+
     -- Top row (dimmed)
     scaledImage:putPixel(pixelX + BGR_COLUMNS.BLUE[1], pixelY + DIMMED_ROWS.TOP, dimmedB)
     scaledImage:putPixel(pixelX + BGR_COLUMNS.BLUE[2], pixelY + DIMMED_ROWS.TOP, dimmedB)
@@ -140,7 +147,7 @@ function showPixelGridDialog()
     local gridDlg = Dialog("GBA Shader")
 
     gridDlg:separator{
-        text = " Colour "
+        text = " Color "
     }
 
     gridDlg:slider{
@@ -210,7 +217,7 @@ function showPixelGridDialog()
     gridDlg:separator()
 
     gridDlg:label{
-        text = " Note: The Image will be scaled to 6x size to simulate real pixels "
+        text = "The Image will be scaled to 6x."
     }
 
     gridDlg:button{
@@ -237,10 +244,14 @@ end
 
 function applyPixelGrid(data)
     local sprite = validateSprite()
-    if not sprite then return end
-    
+    if not sprite then
+        return
+    end
+
     local cel = validateCel()
-    if not cel then return end
+    if not cel then
+        return
+    end
 
     local image = cel.image
     local spec = image.spec
@@ -275,7 +286,7 @@ function apply6xPixelGrid(sprite, cel, image, data)
         local name = path:match("([^/]+)%.[^%.]+$")
         local ext = path:match("%.([^%.]+)$")
         if dir and name and ext then
-            scaledSprite.filename = dir .. name .. "_6x." .. ext
+            scaledSprite.filename = dir .. name .. "_gba." .. ext
         end
     end
 

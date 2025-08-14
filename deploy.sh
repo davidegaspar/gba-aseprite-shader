@@ -41,7 +41,6 @@ mkdir -p "$TARGET_DIR"
 # Copy extension files
 echo "📋 Copying extension files..."
 cp "$SOURCE_DIR/package.json" "$TARGET_DIR/"
-cp "$SOURCE_DIR/extension.json" "$TARGET_DIR/"
 cp "$SOURCE_DIR/gba-aseprite-shader.lua" "$TARGET_DIR/"
 
 echo "✅ Extension deployed successfully!"
