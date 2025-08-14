@@ -157,10 +157,12 @@ jobs:
           EOF
           )
 
-          RELEASE_URL=$(gh release create ${{ steps.npm_version.outputs.version }} \
+          gh release create ${{ steps.npm_version.outputs.version }} \
             --title "GBA Aseprite Shader ${{ steps.npm_version.outputs.version }}" \
             --notes "$RELEASE_NOTES" \
-            ./gba-aseprite-shader.aseprite-extension --json | jq -r '.html_url')
+            ./gba-aseprite-shader.aseprite-extension
+            
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/${{ steps.npm_version.outputs.version }}"
 
           echo "release_url=${RELEASE_URL}" >> $GITHUB_OUTPUT
 
