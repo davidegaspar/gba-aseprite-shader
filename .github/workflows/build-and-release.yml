@@ -21,7 +21,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Calculate version from commit message
+      - name: Get version increment
         id: version
         run: |
           set -e  # Exit on any error
@@ -57,11 +57,10 @@ jobs:
 
           # Add increment type to step summary
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## 🔍 Commit Message Analysis
+          ### ${{ github.job }}
 
-          **Increment Type Detected:** \`$INCREMENT_TYPE\`
+          \`$COMMIT_MESSAGE\` → \`$INCREMENT_TYPE\`
 
-          **Commit Message:** \`$COMMIT_MESSAGE\`
           EOF
 
       - name: Setup Node.js
@@ -69,7 +68,7 @@ jobs:
         with:
           node-version: "lts/*"
 
-      - name: Increment version using npm
+      - name: Increment version
         id: npm_version
         run: |
           # Get the latest tag from git, default to 0.0.0 if none exists
@@ -78,8 +77,6 @@ jobs:
 
           # Remove 'v' prefix for npm version command
           CURRENT_VERSION=${LATEST_TAG#v}
-
-          cat package.json
 
           # Set package.json to current version first
           npm version $CURRENT_VERSION --no-git-tag-version
@@ -91,12 +88,10 @@ jobs:
 
           # Add version to step summary
           cat >> $GITHUB_STEP_SUMMARY << EOF
+          ### ${{ github.job }}
 
-          ## 📋 Version Information
+          \`$LATEST_TAG\` → \`$NEW_VERSION\`
 
-          **Previous Version:** \`$LATEST_TAG\`
-
-          **New Version:** \`$NEW_VERSION\`
           EOF
 
       - name: Add updater configuration to package.json
@@ -131,7 +126,7 @@ jobs:
           echo "Extension contents:"
           unzip -l gba-aseprite-shader.aseprite-extension
 
-      - name: Create Release
+      - name: Release
         # Only create release on main branch pushes, not PRs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: create_release
@@ -160,10 +155,6 @@ jobs:
           # Add release info to step summary
           cat >> $GITHUB_STEP_SUMMARY << EOF
 
-          ## 🚀 Release Created Successfully
+          ${RELEASE_URL}
 
-          **Release URL:** ${RELEASE_URL}
-
-          ### 📦 Extension Package
-          The GBA Aseprite Shader extension has been packaged and is ready for download from the release page.
           EOF
