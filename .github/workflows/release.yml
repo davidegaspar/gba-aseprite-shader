@@ -79,6 +79,8 @@ jobs:
           # Remove 'v' prefix for npm version command
           CURRENT_VERSION=${LATEST_TAG#v}
 
+          cat package.json
+
           # Set package.json to current version first
           npm version $CURRENT_VERSION --no-git-tag-version
 
