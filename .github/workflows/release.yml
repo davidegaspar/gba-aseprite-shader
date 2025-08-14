@@ -107,37 +107,22 @@ jobs:
           unzip -l gba-aseprite-shader.aseprite-extension
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          release_name: GBA Aseprite Shader ${{ steps.version.outputs.version }}
-          body: |
-            ## GBA Aseprite Shader ${{ steps.version.outputs.version }}
+        run: |
+          gh release create ${{ steps.version.outputs.version }} \
+            --title "GBA Aseprite Shader ${{ steps.version.outputs.version }}" \
+            --notes "## GBA Aseprite Shader ${{ steps.version.outputs.version }}
 
-            Recreate the original Game Boy Advance screen look in digital pixelart.
+          Recreate the original Game Boy Advance screen look in digital pixelart.
 
-            ### Installation
+          ### Installation
 
-            1. Download the `gba-aseprite-shader.aseprite-extension` file below
-            2. Double-click the file to install, or
-            3. In Aseprite: Edit → Preferences → Extensions → Add Extension
+          1. Download the \`gba-aseprite-shader.aseprite-extension\` file below
+          2. Double-click the file to install, or
+          3. In Aseprite: Edit → Preferences → Extensions → Add Extension
 
-            ### Usage
+          ### Usage
 
-            Edit → FX → GBA Shader
-            ---
-          draft: false
-          prerelease: false
-
-      - name: Upload Extension File
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./gba-aseprite-shader.aseprite-extension
-          asset_name: gba-aseprite-shader.aseprite-extension
-          asset_content_type: application/zip
+          Edit → FX → GBA Shader" \
+            ./gba-aseprite-shader.aseprite-extension
