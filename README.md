@@ -2,7 +2,7 @@
 
 Recreates the original Game Boy Advance screen look in digital pixelart.
 
-<div align="center">
+<div align="left">
 
 | Original                                       | GBA Shader                                         |
 | ---------------------------------------------- | -------------------------------------------------- |
@@ -19,7 +19,7 @@ Recreates the original Game Boy Advance screen look in digital pixelart.
 
 **Edit** → **FX** → **GBA Shader**
 
-<div align="center">
+<div align="left">
 <img src="imgs/dialog.png" width="400"/>
 </div>
 
