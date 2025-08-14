@@ -2,6 +2,14 @@
 
 Recreates the original Game Boy Advance screen look in digital pixelart.
 
+<div align="center">
+
+| Original                                       | GBA Shader                                         |
+| ---------------------------------------------- | -------------------------------------------------- |
+| <img src="imgs/smpte-export.png" width="300"/> | <img src="imgs/smpte_gba-export.png" width="300"/> |
+
+</div>
+
 ## Installation
 
 1. Download the `gba-aseprite-shader.aseprite-extension` file from the [latest release](https://github.com/davidegaspar/gba-aseprite-shader/releases/latest)
@@ -10,6 +18,10 @@ Recreates the original Game Boy Advance screen look in digital pixelart.
 ## Usage
 
 **Edit** → **FX** → **GBA Shader**
+
+<div align="center">
+<img src="imgs/dialog.png" width="400"/>
+</div>
 
 ## Shader pipeline
 
@@ -34,6 +46,8 @@ _Note: The Blue in the real screen is more Cyan than the shader can achieve._
 ### Output
 
 - New 6x Scale sprite
+
+---
 
 ## Development
 
