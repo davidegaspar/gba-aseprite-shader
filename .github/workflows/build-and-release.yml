@@ -67,6 +67,7 @@ jobs:
           EOF
 
       - name: Setup Node.js
+        if: steps.version.outputs.skip_release != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
