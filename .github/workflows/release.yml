@@ -24,11 +24,11 @@ jobs:
           echo "Commit message: $COMMIT_MESSAGE"
 
           # Extract version increment type from commit message
-          if [[ $COMMIT_MESSAGE =~ ^major\(]]; then
+          if [[ $COMMIT_MESSAGE =~ ^major\( ]]; then
             INCREMENT_TYPE="major"
-          elif [[ $COMMIT_MESSAGE =~ ^minor\(]]; then
+          elif [[ $COMMIT_MESSAGE =~ ^minor\( ]]; then
             INCREMENT_TYPE="minor"
-          elif [[ $COMMIT_MESSAGE =~ ^patch\(]]; then
+          elif [[ $COMMIT_MESSAGE =~ ^patch\( ]]; then
             INCREMENT_TYPE="patch"
           else
             echo "❌ No semantic version prefix found in commit message."
