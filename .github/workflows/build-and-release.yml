@@ -1,0 +1,167 @@
+name: Build and Release Aseprite Extension
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version increment
+        id: version
+        run: |
+          set -e  # Exit on any error
+
+          # Get commit message based on event type
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            COMMIT_MESSAGE="${{ github.event.pull_request.title }}"
+            echo "Using PR title: $COMMIT_MESSAGE"
+          else
+            COMMIT_MESSAGE=$(git log -1 --pretty=%s)
+            echo "Using commit message: $COMMIT_MESSAGE"
+          fi
+
+          # Extract version increment type from commit message
+          if [[ $COMMIT_MESSAGE =~ ^major(\(|:) ]]; then
+            INCREMENT_TYPE="major"
+          elif [[ $COMMIT_MESSAGE =~ ^minor(\(|:) ]]; then
+            INCREMENT_TYPE="minor"
+          elif [[ $COMMIT_MESSAGE =~ ^patch(\(|:) ]]; then
+            INCREMENT_TYPE="patch"
+          elif [[ $COMMIT_MESSAGE =~ ^chore(\(|:) ]]; then
+            echo "✅ Chore commit detected - skipping release"
+            echo "skip_release=true" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "❌ No semantic version prefix found in commit message."
+            echo "Expected format: 'major(component): description', 'minor(component): description', 'patch(component): description'"
+            echo "Or simplified: 'major: description', 'minor: description', 'patch: description'"
+            echo "Current message: '$COMMIT_MESSAGE'"
+            exit 1
+          fi
+
+          echo "✅ Version increment type: $INCREMENT_TYPE"
+
+          # Set outputs for the increment type
+          echo "increment_type=${INCREMENT_TYPE}" >> $GITHUB_OUTPUT
+
+          # Add increment type to step summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          \`$COMMIT_MESSAGE\` → \`$INCREMENT_TYPE\`
+
+          EOF
+
+      - name: Setup Node.js
+        if: steps.version.outputs.skip_release != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Increment version
+        if: steps.version.outputs.skip_release != 'true'
+        id: npm_version
+        run: |
+          # Get the latest tag from git, default to 0.0.0 if none exists
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Current version: $LATEST_TAG"
+
+          # Remove 'v' prefix for npm version command
+          CURRENT_VERSION=${LATEST_TAG#v}
+
+          # Set package.json to current version first
+          npm version $CURRENT_VERSION --no-git-tag-version
+
+          # Now increment using npm
+          NEW_VERSION=$(npm version ${{ steps.version.outputs.increment_type }} --no-git-tag-version)
+          echo "✅ New version: $NEW_VERSION"
+          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+
+          # Add version to step summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          \`$LATEST_TAG\` → \`$NEW_VERSION\`
+
+          EOF
+
+      - name: Add updater configuration to package.json
+        if: steps.version.outputs.skip_release != 'true'
+        run: |
+          npm pkg set asepriteExtensionUpdater.updateUrl="https://api.github.com/repos/${{ github.repository }}/releases/latest"
+
+      - name: Create extension package
+        if: steps.version.outputs.skip_release != 'true'
+        run: |
+          # Create a clean directory for the extension
+          mkdir -p extension-build
+
+          # Validate required files exist
+          for file in package.json gba-aseprite-shader.lua LICENSE; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Required file missing: $file"
+              exit 1
+            fi
+          done
+
+          # Copy necessary files
+          cp package.json extension-build/
+          cp gba-aseprite-shader.lua extension-build/
+          cp LICENSE extension-build/
+
+          # Create the .aseprite-extension file
+          cd extension-build
+          zip -r "../gba-aseprite-shader.aseprite-extension" .
+          cd ..
+
+      - name: Verify extension contents
+        if: steps.version.outputs.skip_release != 'true'
+        run: |
+          echo "Extension contents:"
+          unzip -l gba-aseprite-shader.aseprite-extension
+
+      - name: Release
+        # Only create release on main branch pushes, not PRs, and not for chore commits
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.version.outputs.skip_release != 'true'
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_URL=$(gh release create ${{ steps.npm_version.outputs.version }} \
+            --title "GBA Aseprite Shader ${{ steps.npm_version.outputs.version }}" \
+            --notes "## GBA Aseprite Shader ${{ steps.npm_version.outputs.version }}
+
+          Recreate the original Game Boy Advance screen look in digital pixelart.
+
+          ### Installation
+
+          1. Download the \`gba-aseprite-shader.aseprite-extension\` file below
+          2. Double-click the file to install, or
+          3. In Aseprite: Edit → Preferences → Extensions → Add Extension
+
+          ### Usage
+
+          Edit → FX → GBA Shader" \
+            ./gba-aseprite-shader.aseprite-extension --json | jq -r '.html_url')
+
+          echo "release_url=${RELEASE_URL}" >> $GITHUB_OUTPUT
+
+          # Add release info to step summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ${RELEASE_URL}
+
+          EOF

@@ -1,0 +1,8 @@
+.DS_Store
+tests/**/*.png
+tests/**/*.jpeg
+tests/**/*.jpg
+tests/**/*.bmp
+tests/**/*.aseprite
+tests/**/*.gba
+tests/**/*.sav
