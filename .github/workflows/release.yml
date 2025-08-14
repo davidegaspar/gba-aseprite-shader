@@ -63,7 +63,17 @@ jobs:
       - name: Increment version using npm
         id: npm_version
         run: |
-          # Use npm to increment version and capture the result
+          # Get the latest tag from git, default to 0.0.0 if none exists
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Current version: $LATEST_TAG"
+          
+          # Remove 'v' prefix for npm version command
+          CURRENT_VERSION=${LATEST_TAG#v}
+          
+          # Set package.json to current version first
+          npm version $CURRENT_VERSION --no-git-tag-version
+          
+          # Now increment using npm
           NEW_VERSION=$(npm version ${{ steps.version.outputs.increment_type }} --no-git-tag-version)
           echo "✅ New version: $NEW_VERSION"
           echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
