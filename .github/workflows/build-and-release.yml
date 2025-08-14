@@ -57,7 +57,6 @@ jobs:
 
           # Add increment type to step summary
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          ### ${{ github.job }}
 
           \`$COMMIT_MESSAGE\` → \`$INCREMENT_TYPE\`
 
@@ -88,7 +87,6 @@ jobs:
 
           # Add version to step summary
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          ### ${{ github.job }}
 
           \`$LATEST_TAG\` → \`$NEW_VERSION\`
 
