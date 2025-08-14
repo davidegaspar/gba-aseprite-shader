@@ -77,6 +77,17 @@ jobs:
           NEW_VERSION=$(npm version ${{ steps.version.outputs.increment_type }} --no-git-tag-version)
           echo "✅ New version: $NEW_VERSION"
           echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          
+          # Add version to step summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 📋 Version Information
+          
+          **Increment Type:** \`${{ steps.version.outputs.increment_type }}\`
+          
+          **Previous Version:** \`$LATEST_TAG\`
+          
+          **New Version:** \`$NEW_VERSION\`
+          EOF
 
       - name: Add updater configuration to package.json
         run: |
@@ -113,10 +124,11 @@ jobs:
       - name: Create Release
         # Only create release on main branch pushes, not PRs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ steps.npm_version.outputs.version }} \
+          RELEASE_URL=$(gh release create ${{ steps.npm_version.outputs.version }} \
             --title "GBA Aseprite Shader ${{ steps.npm_version.outputs.version }}" \
             --notes "## GBA Aseprite Shader ${{ steps.npm_version.outputs.version }}
 
@@ -131,4 +143,20 @@ jobs:
           ### Usage
 
           Edit → FX → GBA Shader" \
-            ./gba-aseprite-shader.aseprite-extension
+            ./gba-aseprite-shader.aseprite-extension --json | jq -r '.html_url')
+          
+          echo "release_url=${RELEASE_URL}" >> $GITHUB_OUTPUT
+          
+          # Add release info to step summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          
+          ## 🚀 Release Created Successfully
+          
+          **Version:** [\`${{ steps.npm_version.outputs.version }}\`](${RELEASE_URL})
+          
+          **Release URL:** ${RELEASE_URL}
+          
+          ### 📦 Extension Package
+          The GBA Aseprite Shader extension has been packaged and is ready for download from the release page.
+          EOF
+
