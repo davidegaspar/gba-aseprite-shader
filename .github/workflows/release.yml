@@ -55,6 +55,15 @@ jobs:
           # Set outputs for the increment type
           echo "increment_type=${INCREMENT_TYPE}" >> $GITHUB_OUTPUT
 
+          # Add increment type to step summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🔍 Commit Message Analysis
+
+          **Increment Type Detected:** \`$INCREMENT_TYPE\`
+
+          **Commit Message:** \`$COMMIT_MESSAGE\`
+          EOF
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -66,26 +75,25 @@ jobs:
           # Get the latest tag from git, default to 0.0.0 if none exists
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           echo "Current version: $LATEST_TAG"
-          
+
           # Remove 'v' prefix for npm version command
           CURRENT_VERSION=${LATEST_TAG#v}
-          
+
           # Set package.json to current version first
           npm version $CURRENT_VERSION --no-git-tag-version
-          
+
           # Now increment using npm
           NEW_VERSION=$(npm version ${{ steps.version.outputs.increment_type }} --no-git-tag-version)
           echo "✅ New version: $NEW_VERSION"
           echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
-          
+
           # Add version to step summary
           cat >> $GITHUB_STEP_SUMMARY << EOF
+
           ## 📋 Version Information
-          
-          **Increment Type:** \`${{ steps.version.outputs.increment_type }}\`
-          
+
           **Previous Version:** \`$LATEST_TAG\`
-          
+
           **New Version:** \`$NEW_VERSION\`
           EOF
 
@@ -144,19 +152,16 @@ jobs:
 
           Edit → FX → GBA Shader" \
             ./gba-aseprite-shader.aseprite-extension --json | jq -r '.html_url')
-          
+
           echo "release_url=${RELEASE_URL}" >> $GITHUB_OUTPUT
-          
+
           # Add release info to step summary
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          
+
           ## 🚀 Release Created Successfully
-          
-          **Version:** [\`${{ steps.npm_version.outputs.version }}\`](${RELEASE_URL})
-          
+
           **Release URL:** ${RELEASE_URL}
-          
+
           ### 📦 Extension Package
           The GBA Aseprite Shader extension has been packaged and is ready for download from the release page.
           EOF
-
