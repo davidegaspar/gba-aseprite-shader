@@ -22,13 +22,13 @@ jobs:
           # Get the latest commit message
           COMMIT_MESSAGE=$(git log -1 --pretty=%s)
           echo "Commit message: $COMMIT_MESSAGE"
-          
+
           # Extract version increment type from commit message
-          if [[ $COMMIT_MESSAGE =~ ^major\( ]]; then
+          if [[ $COMMIT_MESSAGE =~ ^major\(]]; then
             INCREMENT_TYPE="major"
-          elif [[ $COMMIT_MESSAGE =~ ^minor\( ]]; then
+          elif [[ $COMMIT_MESSAGE =~ ^minor\(]]; then
             INCREMENT_TYPE="minor"
-          elif [[ $COMMIT_MESSAGE =~ ^patch\( ]]; then
+          elif [[ $COMMIT_MESSAGE =~ ^patch\(]]; then
             INCREMENT_TYPE="patch"
           else
             echo "❌ No semantic version prefix found in commit message."
@@ -36,22 +36,22 @@ jobs:
             echo "Cancelling release."
             exit 1
           fi
-          
+
           echo "Version increment type: $INCREMENT_TYPE"
-          
+
           # Get the latest tag from git, default to 0.0.0 if none exists
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
           echo "Latest tag: $LATEST_TAG"
-          
+
           # Use the tag directly as version
           CURRENT_VERSION=$LATEST_TAG
-          
+
           # Parse version components
           IFS='.' read -r -a version_parts <<< "$CURRENT_VERSION"
           major=${version_parts[0]:-0}
           minor=${version_parts[1]:-0}
           patch=${version_parts[2]:-0}
-          
+
           # Increment based on type
           case $INCREMENT_TYPE in
             "major")
@@ -67,9 +67,9 @@ jobs:
               patch=$((patch + 1))
               ;;
           esac
-          
+
           VERSION="$major.$minor.$patch"
-          
+
           echo "New version: $VERSION"
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "version_number=${VERSION}" >> $GITHUB_OUTPUT
